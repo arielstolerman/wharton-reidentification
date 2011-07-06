@@ -106,14 +106,18 @@ public class SimpleListFilter {
 				contacts = new HashMap<String,Integer>();
 			}
 			
-			// add data (should be unique)
+			// add data (aggregate if necessary)
 			recipient = split[2];
-			assert(!contacts.containsKey(recipient));
-			contacts.put(recipient, Integer.parseInt(split[4]));
+			if (!contacts.containsKey(recipient)) {
+				contacts.put(recipient, Integer.parseInt(split[4]));
+			} else {
+				contacts.put(recipient,contacts.get(recipient) + Integer.parseInt(split[4]));
+			}
+			
 			records.put(id, contacts);
 		}
 
-		/* -- print for debugging -- 
+		/* -- print for debugging -- */
 		System.out.println("Records");
 		System.out.println("=======");
 		for (Iterator<String> a = records.keySet().iterator(); a.hasNext(); ) {
@@ -171,10 +175,77 @@ public class SimpleListFilter {
 		out.close();
 	}
 	
+	public static void enumerateStrings(String inpath, String outpath) throws IOException {
+		FileInputStream inStream = new FileInputStream(inpath);
+		DataInputStream in = new DataInputStream(inStream);
+		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		String line;
+		
+		// Read only data
+		// designed for Enron email logs db, with attributes
+		
+		// get to data
+		String header = "";
+		while ((line = br.readLine()) != null) {
+			header += line.replace("STRING", "INTEGER")+"\n";
+			if (line.contains("@DATA")) break;
+		}
+		
+		// read lines and save id mapping
+		int i = 0;
+		String[] split;
+		Map<String,Integer> map = new HashMap<String,Integer>();
+		String sender, recipient;
+		
+		while ((line = br.readLine()) != null) {
+			split = line.split(",");
+			sender = split[1];
+			recipient = split[2];
+			if (!map.containsKey(sender)) {
+				map.put(sender, i++);
+			}
+			if (!map.containsKey(recipient)) {
+				map.put(recipient, i++);
+			}
+		}
+
+		// create new ARFF file for the output
+		FileOutputStream outStream = new FileOutputStream(outpath);
+		DataOutputStream out = new DataOutputStream(outStream);
+		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(out));
+		
+		bw.write(header);
+		bw.flush();
+		
+		in.close();
+		inStream = new FileInputStream(inpath);
+		in = new DataInputStream(inStream);
+		br = new BufferedReader(new InputStreamReader(in));
+		
+		while ((line = br.readLine()) != null) {
+			if (line.contains("@DATA")) break;
+		}
+		
+		// go over data again and switch strings with integers
+		i = 0;
+		while ((line = br.readLine()) != null) {
+			split = line.split(",");
+			bw.write(split[0]+","+map.get(split[1])+","+map.get(split[2])+","+split[3]+","+split[4]+"\n");
+			if (i++ % 100 == 0) bw.flush();
+		}
+		bw.flush();
+		
+		in.close();
+		out.close();
+	}
+	
 	public static void main(String[] args) {
 		String path = "D:\\data\\documents\\Workspace\\wharton.reidentification\\raw-data\\arff";
+		String baseFileName = "enron";
 		try {
-			makeSimpleList(path+"\\enron.arff",path+"\\enron_filtered.arff");
+			makeSimpleList(path+"\\"+baseFileName+".arff",path+"\\"+baseFileName+"_filtered.arff");
+			enumerateStrings(path+"\\"+baseFileName+".arff", path+"\\"+baseFileName+"_enum.arff");
+			makeSimpleList(path+"\\"+baseFileName+"_enum.arff",path+"\\"+baseFileName+"_filtered_enum.arff");
 		} catch (IOException ioe) {
 			ioe.printStackTrace();
 		}
