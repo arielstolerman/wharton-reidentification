@@ -1,6 +1,6 @@
-package converters_;
+package filters;
 
-public class Converters {
+public class FiltersTest {
 
 	/**
 	 * @param args

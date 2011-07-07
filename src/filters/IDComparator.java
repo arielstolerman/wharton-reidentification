@@ -1,4 +1,4 @@
-package filters_;
+package filters;
 
 import java.util.*;
 

@@ -1,6 +1,6 @@
-package classifiers_;
+package converters;
 
-public class ClassifiersTest {
+public class Converters {
 
 	/**
 	 * @param args

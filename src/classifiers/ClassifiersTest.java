@@ -1,8 +1,6 @@
-package converters_;
+package classifiers;
 
-import weka.core.converters.*;
-
-public class ConvertersTest {
+public class ClassifiersTest {
 
 	/**
 	 * @param args

@@ -1,6 +1,8 @@
-package filters_;
+package converters;
 
-public class FiltersTest {
+import weka.core.converters.*;
+
+public class ConvertersTest {
 
 	/**
 	 * @param args
