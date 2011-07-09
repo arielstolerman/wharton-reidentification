@@ -1,9 +1,15 @@
 package data;
 
 import java.io.*;
+import java.lang.management.MemoryUsage;
 import java.text.*;
 import java.util.*;
 import weka.core.*;
+import weka.core.converters.ArffLoader;
+import weka.classifiers.Evaluation;
+import weka.classifiers.bayes.*;
+import weka.classifiers.lazy.*;
+import weka.classifiers.trees.*;
 
 public class DataManipulation {
 
@@ -93,22 +99,105 @@ public class DataManipulation {
 		System.out.println("Done! Total number of edges in matrix: "+numOfEdges);
 	}
 	
-	public static void main(String[] args) {
-		
-		
-		
-		System.exit(0);
+	public static ArffLoader getLoader(String arffPath) throws IOException {
+		ArffLoader loader = new ArffLoader();
+		loader.setFile(new File(arffPath));
+		return loader;
+	}
+	
+	public static String getAvailMem() {
+		return Long.toString(Runtime.getRuntime().freeMemory()/1048576)+"mb";
+	}
+	
+	public static String getUsedMem() {
+		return Long.toString((Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1048576)+"mb";
+	}
+	
+	public static void testClassifiers(weka.classifiers.Classifier c, int initialNumAttrs, int maxNumAttrs) {
+		String arffDir = "D:\\data\\documents\\Workspace\\wharton.reidentification\\raw-data\\arff\\rand_data\\";
 		
 		try {
-			int numOfAttrs = 262144;
-			for (int i=0; numOfAttrs <= Integer.MAX_VALUE/2; i++) {
+			// run weka analysis on models
+			long maxMem = Runtime.getRuntime().maxMemory()/1048576;
+			System.out.println(">>> Max JVM memory: "+maxMem+"mb");
+			System.out.println("");
+			
+			int numOfAttrs = initialNumAttrs;
+			do {
+				Runtime.getRuntime().gc();
+				System.out.println("Analysis for "+numOfAttrs+" instances");
+				System.out.println("=============================================================================");
+				
+				try {
+					// read data and set class attribute
+					System.out.println(">>> Pre read used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
+					BufferedReader reader = new BufferedReader(new FileReader(arffDir+numOfAttrs+".arff"));
+					Instances data = new Instances(reader);
+					reader.close();
+					data.setClassIndex(0);
+					System.out.println(">>> Post read used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
+					System.out.println("Read data with "+data.numInstances()+" instances");
+					System.out.println("");
+					
+					Evaluation eval = new Evaluation(data);
+
+					// build model
+					System.out.println("Building model...");
+					c.buildClassifier(data);
+					System.out.println("Done training!");
+					System.out.println(">>> Post training used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
+
+					// evaluate on training set
+					System.out.println("Testing Naive Bayes model on training data...");
+					int count = 0;
+					for (Iterator<Instance> it = data.iterator(); it.hasNext(); ) {
+						eval.evaluateModelOnce(c, it.next());
+						count++;
+						if (count % 100 ==0) System.out.println("- Evaluated "+count+" instances...");
+					}
+					System.out.println(">>> Post Naive Bayes evaluating used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
+					System.out.println("Evaulation summary:");
+					System.out.println("- correct: "+eval.correct()+" ("+(eval.correct()*100/numOfAttrs)+"%)");
+					System.out.println("- incorrect: "+eval.incorrect()+" ("+(eval.incorrect()*100/numOfAttrs)+"%)");
+					System.out.println();
+					
+				} catch (OutOfMemoryError oome) {
+					System.err.println("\nOut of memory in last action. Continuing to next iteration...\n");
+				}
+
 				numOfAttrs *= 2;
+			} while (numOfAttrs <= maxNumAttrs);
+
+		} catch (IOException ioe) {
+			System.err.println("IO exception thrown");
+			ioe.printStackTrace();
+		} catch (Exception e) {
+			System.err.println("Exception thrown - propbably from classifier training");
+			e.printStackTrace();
+		}
+	}
+		
+	public static void genExamples(int initialNumAttrs) {
+		String arffDir = "D:\\data\\documents\\Workspace\\wharton.reidentification\\raw-data\\arff\\rand_data\\";
+		
+		try {
+			// generate examples
+			int numOfAttrs = initialNumAttrs;
+			for (int i=0; numOfAttrs <= Integer.MAX_VALUE/2; i++) {
 				System.out.println("Generating file for "+numOfAttrs+" attributes...");
-				genRandArff(numOfAttrs,"D:\\data\\documents\\Workspace\\wharton.reidentification\\raw-data\\arff\\rand_data\\"+numOfAttrs+".arff");
+				genRandArff(numOfAttrs,arffDir+numOfAttrs+".arff");
+				numOfAttrs *= 2;
 			}
 		} catch (IOException ioe) {
+			System.err.println("IO exception thrown");
 			ioe.printStackTrace();
 		}
+	}
+	
+	public static void main(String[] args) {
+		testClassifiers(new IBk(1),1024,65536);
+		testClassifiers(new NaiveBayes(), 1024, 65536);
+		//genExamples(524288);
 	}
 	
 }
