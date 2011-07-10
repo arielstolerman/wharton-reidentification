@@ -91,7 +91,10 @@ public class DataManipulation {
 					bw.write(", "+(j+1)+" "+(r.nextInt(MAX_NUM_OF_TRANSACTIONS_PER_EDGE)+1));
 			}
 			bw.write("}\n");
-			if (i % 100 == 0) bw.flush();
+			if (i % 100 == 0) {
+				System.out.println("- Generated "+i+" vectors...");
+				bw.flush();
+			}
 		}
 		bw.flush();
 		out.close();
@@ -112,8 +115,74 @@ public class DataManipulation {
 	public static String getUsedMem() {
 		return Long.toString((Runtime.getRuntime().totalMemory()-Runtime.getRuntime().freeMemory())/1048576)+"mb";
 	}
+		
+	public static void testClassifier(weka.classifiers.Classifier c, int initialNumAttrs, int maxNumAttrs, boolean evaluate) {
+		String arffDir = "D:\\data\\documents\\Workspace\\wharton.reidentification\\raw-data\\arff\\rand_data\\";
+		
+		try {
+			// run weka analysis on models
+			long maxMem = Runtime.getRuntime().maxMemory()/1048576;
+			System.out.println(">>> Max JVM memory: "+maxMem+"mb");
+			System.out.println("");
+			
+			int numOfAttrs = initialNumAttrs;
+			do {
+				Runtime.getRuntime().gc();
+				System.out.println("\nAnalysis for "+numOfAttrs+" instances");
+				System.out.println("=============================================================================");
+				
+				try {
+					// read data and set class attribute
+					System.out.println(">>> Pre read used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
+					BufferedReader reader = new BufferedReader(new FileReader(arffDir+numOfAttrs+".arff"));
+					Instances data = new Instances(reader);
+					reader.close();
+					data.setClassIndex(0);
+					System.out.println(">>> Post read used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
+					System.out.println("Read data with "+data.numInstances()+" instances");
+					System.out.println("");
+
+					// build model
+					System.out.println("Building model...");
+					long initTime = System.currentTimeMillis();
+					c.buildClassifier(data);
+					System.out.println("Done training! model built in "+(((double)(System.currentTimeMillis() - initTime)) / 1000)+" seconds");
+					System.out.println(">>> Post training used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
+
+					if (evaluate) {
+						// evaluate on training set
+						Evaluation eval = new Evaluation(data);
+						System.out.println("Testing Naive Bayes model on training data...");
+						int count = 0;
+						for (Iterator<Instance> it = data.iterator(); it.hasNext(); ) {
+							eval.evaluateModelOnce(c, it.next());
+							count++;
+							if (count % 100 ==0) System.out.println("- Evaluated "+count+" instances...");
+						}
+						System.out.println(">>> Post Naive Bayes evaluating used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
+						System.out.println("Evaulation summary:");
+						System.out.println("- correct: "+eval.correct()+" ("+(eval.correct()*100/numOfAttrs)+"%)");
+						System.out.println("- incorrect: "+eval.incorrect()+" ("+(eval.incorrect()*100/numOfAttrs)+"%)");
+						System.out.println();
+					}
+
+				} catch (OutOfMemoryError oome) {
+					System.err.println("\nOut of memory in last action. Continuing to next iteration...\n");
+				}
+
+				numOfAttrs *= 2;
+			} while (numOfAttrs <= maxNumAttrs);
+
+		} catch (IOException ioe) {
+			System.err.println("IO exception thrown");
+			ioe.printStackTrace();
+		} catch (Exception e) {
+			System.err.println("Exception thrown - propbably from classifier training");
+			e.printStackTrace();
+		}
+	}
 	
-	public static void testClassifiers(weka.classifiers.Classifier c, int initialNumAttrs, int maxNumAttrs) {
+	public static void testClassifierInc(weka.classifiers.UpdateableClassifier uc, int initialNumAttrs, int maxNumAttrs) {
 		String arffDir = "D:\\data\\documents\\Workspace\\wharton.reidentification\\raw-data\\arff\\rand_data\\";
 		
 		try {
@@ -141,15 +210,21 @@ public class DataManipulation {
 					
 					Evaluation eval = new Evaluation(data);
 
-					// build model
-					System.out.println("Building model...");
-					c.buildClassifier(data);
+					// build model incrementally
+					int count = 0;
+					System.out.println("Building model incrementally...");
+					for (Iterator<Instance> it = data.iterator(); it.hasNext(); ) {
+						uc.updateClassifier(it.next());
+						count++;
+						if (count % 100 ==0) System.out.println("- Parsed "+count+" instances...");
+					}
 					System.out.println("Done training!");
 					System.out.println(">>> Post training used memory: "+getUsedMem()+" (Memory left: "+getAvailMem()+")");
 
 					// evaluate on training set
 					System.out.println("Testing Naive Bayes model on training data...");
-					int count = 0;
+					count = 0;
+					weka.classifiers.Classifier c = (weka.classifiers.Classifier) uc;
 					for (Iterator<Instance> it = data.iterator(); it.hasNext(); ) {
 						eval.evaluateModelOnce(c, it.next());
 						count++;
@@ -195,9 +270,15 @@ public class DataManipulation {
 	}
 	
 	public static void main(String[] args) {
-		testClassifiers(new IBk(1),1024,65536);
-		testClassifiers(new NaiveBayes(), 1024, 65536);
-		//genExamples(524288);
+		//System.out.println("\n##### IBK #####\n");
+		//testClassifier(new IBk(5),1024,65536,false);
+		
+		//System.out.println("\n##### Naive Bayes #####\n");
+		//testClassifier(new NaiveBayes(),8192,65536,false);
+
+		//testClassifier(new NaiveBayes(), 65536, 65536);
+		//testClassifierInc(new NaiveBayesUpdateable(), 65536, 65536);
+		genExamples(524288);
 	}
 	
 }
