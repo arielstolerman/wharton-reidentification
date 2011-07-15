@@ -1,4 +1,4 @@
-package data;
+package other;
 
 import java.io.*;
 import java.lang.management.MemoryUsage;
