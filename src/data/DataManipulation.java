@@ -271,7 +271,7 @@ public class DataManipulation {
 	
 	public static void main(String[] args) {
 		//System.out.println("\n##### IBK #####\n");
-		//testClassifier(new IBk(5),1024,65536,false);
+		testClassifier(new IBk(5),1024,65536,false);
 		
 		//System.out.println("\n##### Naive Bayes #####\n");
 		//testClassifier(new NaiveBayes(),8192,65536,false);
