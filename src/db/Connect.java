@@ -31,22 +31,25 @@ public class Connect
 		{
 			String userName = "root";
 			String password = "olive123";
-			String url = "jdbc:mysql://localhost:3307/enron";
+			String url = "jdbc:mysql://localhost:3307/enrondb";
 			Class.forName ("com.mysql.jdbc.Driver").newInstance ();
 			conn = DriverManager.getConnection (url, userName, password);
 			System.out.println ("Database connection established");
 
 			// try communicate with the db
-			printTransactions(conn);
+			//printTransactions(conn);
 			
 			// update db
-			PreparedStatement ps = conn.prepareStatement("INSERT INTO transactions values('2011-09-18',999,777,123.456)");
+			String ex = "INSERT INTO `transactors`(`transactor_name`) VALUES ('username2')\n"+
+						"INSERT INTO `transactors`(`transactor_name`) VALUES ('username3')";
+					//"INSERT IF NOT EXISTS INTO `transactors`(`transactor_name`) VALUES ('username2')";
+			PreparedStatement ps = conn.prepareStatement(ex);
 			int count = ps.executeUpdate();
 			ps.close();
 			System.out.println(count+" rows were inserted");
 			
 			// print table again
-			printTransactions(conn);
+			//printTransactions(conn);
 		}
 		catch (Exception e)
 		{
