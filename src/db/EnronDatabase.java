@@ -185,10 +185,13 @@ public class EnronDatabase {
 					System.err.println("BUG!");
 				}
 				
+				String lineOriginalType = lineSplit[3]; //TODO
 				String lineOriginalWeight = lineSplit[4];
+				lineSplit[3] = aggrSplit[3];
 				lineSplit[4] = aggrSplit[4];
 				
 				if (Arrays.deepEquals(aggrSplit, lineSplit)) {
+					lineSplit[3] = lineOriginalType;
 					lineSplit[4] = lineOriginalWeight;
 					// line fits in signature - aggregate weight
 					aggrSplit[4] = (new Integer(Integer.valueOf(aggrSplit[4]) + Integer.valueOf(lineSplit[4]))).toString();
@@ -196,7 +199,8 @@ public class EnronDatabase {
 					
 				} else {
 					// line doesn't fit in signature - write aggregated line to file and initialize
-					bw.write(aggrSplit[0]+" "+aggrSplit[1]+" "+aggrSplit[2]+" "+aggrSplit[3]+" "+aggrSplit[4]+"\n");
+					//bw.write(aggrSplit[0]+" "+aggrSplit[1]+" "+aggrSplit[2]+" "+aggrSplit[3]+" "+aggrSplit[4]+"\n");
+					bw.write(aggrSplit[0]+" "+aggrSplit[1]+" "+aggrSplit[2]+" "+aggrSplit[4]+"\n"); //TODO
 					if (aggrCount > 0) {
 						System.out.println("Aggregation for line "+count+", signature '"+aggrSplit[0]+"',"+aggrSplit[1]+","+aggrSplit[2]+",'"+aggrSplit[3]+"' is "+aggrCount);
 						aggrCount = 0;
@@ -314,8 +318,10 @@ public class EnronDatabase {
 		while ((line = br.readLine()) != null) {
 			split = line.split(" ");
 			
-			st.addBatch("INSERT INTO `transactions`(`timestamp`, `sender_id`, `recipient_id`, `type`, `weight`) " +
-					"VALUES ('"+split[0]+"',"+split[1]+","+split[2]+",'"+split[3]+"',"+split[4]+")");
+			//st.addBatch("INSERT INTO `transactions`(`timestamp`, `sender_id`, `recipient_id`, `type`, `weight`) " +
+				//	"VALUES ('"+split[0]+"',"+split[1]+","+split[2]+",'"+split[3]+"',"+split[4]+")");
+			st.addBatch("INSERT INTO `transactions`(`timestamp`, `transactor_id`, `transactee_id`, `weight`) " +
+					"VALUES ('"+split[0]+" 00:00:00',"+split[1]+","+split[2]+","+split[3]+")");
 			
 			if (++count % sizeOfBatch == 0) {
 				updateCount = st.executeBatch();
@@ -452,13 +458,19 @@ public class EnronDatabase {
 			 * Do DB actions
 			 * *************/
 			
-			String path = "D:\\data\\workspace\\java\\wharton.reidentification\\raw-data\\enron complete database\\out\\final\\";
+			//String path = "D:\\data\\workspace\\java\\wharton.reidentification\\raw-data\\enron complete database\\out\\final\\";
 			//putTransactorsInDB(path+"transactors.txt",conns[0],SIZE_OF_BATCH,true);
+			
 			//Map<String,Integer> map = getTransactorMap(conns[0]);
 			//writeNumericTransactionsFile(path+"transactions_numeric_ids.txt",path+"transactions.txt",map);
-			//writeNumericTransactionsFileAggregated(path+"transactions_numeric_ids_aggr.txt",path+"transactions_numeric_ids.txt");
-			//splitFile(path+"transactions_numeric_ids_aggr.txt",path+"transactions_numeric_ids_aggr","txt",numOfThreads);
-			//putTransactionsInDBThreaded(path+"transactions_numeric_ids_aggr", "txt", conns, SIZE_OF_BATCH, true, numOfThreads);
+			
+			// aggregation regardless of type
+			//writeNumericTransactionsFileAggregated(path+"transactions_numeric_ids_aggr_no_type.txt",path+"transactions_numeric_ids.txt");
+			
+			//splitFile(path+"transactions_numeric_ids_aggr_no_type.txt",path+"transactions_numeric_ids_aggr_no_type","txt",numOfThreads);
+			
+			//putTransactionsInDBThreaded(path+"transactions_numeric_ids_aggr_no_type", "txt", conns, SIZE_OF_BATCH, true, numOfThreads);
+			
 		}
 		catch (SQLException sqle) {
 			System.err.println("SQL Exception");
