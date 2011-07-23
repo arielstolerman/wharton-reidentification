@@ -34,7 +34,7 @@ import general.Log.STDTypeEnum;;
  * </ul>
  * </p>
  */
-public class DynamicNetworkDatabase {
+public class BasicDatabase {
 
 	/* ******
 	 * fields
@@ -63,7 +63,7 @@ public class DynamicNetworkDatabase {
 	/**
 	 * 
 	 */
-	public DynamicNetworkDatabase() {
+	public BasicDatabase() {
 		constOut();
 	}
 
@@ -75,7 +75,7 @@ public class DynamicNetworkDatabase {
 	 * @param db_port
 	 * @param db_name
 	 */
-	public DynamicNetworkDatabase(String db_user, String db_password, String db_url, int db_port, String db_name)  {
+	public BasicDatabase(String db_user, String db_password, String db_url, int db_port, String db_name)  {
 		this.db_user = db_user;
 		this.db_pass = db_password;
 		this.db_url = db_url;
@@ -91,7 +91,7 @@ public class DynamicNetworkDatabase {
 	 * @param num_of_threads
 	 * @throws DynamicNetworkDatabaseException
 	 */
-	public DynamicNetworkDatabase(int size_of_batch, int num_of_threads) throws DynamicNetworkDatabaseException {
+	public BasicDatabase(int size_of_batch, int num_of_threads) throws DynamicNetworkDatabaseException {
 		if (size_of_batch < 1 || num_of_threads < 1) {
 			String msg = "Size of batch and/or number of threads must be bigger than 0.";
 			Log.log(msg,STDTypeEnum.STDERR);
@@ -113,7 +113,7 @@ public class DynamicNetworkDatabase {
 	 * @param num_of_threads
 	 * @throws DynamicNetworkDatabaseException
 	 */
-	public DynamicNetworkDatabase(String db_user, String db_password, String db_url, int db_port, String db_name, int size_of_batch, int num_of_threads)
+	public BasicDatabase(String db_user, String db_password, String db_url, int db_port, String db_name, int size_of_batch, int num_of_threads)
 			throws DynamicNetworkDatabaseException {
 		this.db_user = db_user;
 		this.db_pass = db_password;
@@ -158,7 +158,7 @@ public class DynamicNetworkDatabase {
 	public static void main(String[] args) {
 		Log.log("Starting test ...",STDTypeEnum.STDOUT);
 		
-		DynamicNetworkDatabase dndb = new  DynamicNetworkDatabase();
+		BasicDatabase dndb = new  BasicDatabase();
 		
 		Log.closeLog();
 	}
