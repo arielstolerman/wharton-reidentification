@@ -44,9 +44,9 @@ public class General {
 	
 	
 	/**
-	 * Get now in "YYYY-MM-DD HH:mm:ss" format.
+	 * Get now in "yyyy-MM-dd HH:mm:ss" format.
 	 */
 	public static String getNow() {
-		return (new SimpleDateFormat("YYYY-MM-DD HH:mm:ss")).format(Calendar.getInstance().getTime());
+		return (new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format(Calendar.getInstance().getTime());
 	}
 }

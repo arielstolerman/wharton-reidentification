@@ -42,8 +42,10 @@ public class DynamicNetworkDatabase {
 
 	// database connection parameters
 	// ------------------------------
-	protected String db_url = "jdbc:mysql://localhost/";
-	protected String db_port = "3307";
+	protected String db_user = "root";
+	protected String db_pass = "olive123";
+	protected String db_url = "jdbc:mysql://localhost";
+	protected int db_port = 3307;
 	protected String db_name = "enrondb";
 	
 	// performance parameters
@@ -57,24 +59,30 @@ public class DynamicNetworkDatabase {
 	/* ************
 	 * constructors
 	 * ************/
-	
+
 	/**
 	 * 
+	 */
+	public DynamicNetworkDatabase() {
+		constOut();
+	}
+
+	/**
+	 * 
+	 * @param db_user
+	 * @param db_password
 	 * @param db_url
 	 * @param db_port
 	 * @param db_name
 	 */
-	public DynamicNetworkDatabase(String db_url, String db_port, String db_name)  {
+	public DynamicNetworkDatabase(String db_user, String db_password, String db_url, int db_port, String db_name)  {
+		this.db_user = db_user;
+		this.db_pass = db_password;
 		this.db_url = db_url;
 		this.db_port = db_port;
 		this.db_name = db_name;
-		Log.log("Created DynamicNetworkDatabase with:\n"+
-				"database url: "+db_url+"\n"+
-				"database port: "+db_port+"\n"+
-				"database name: "+db_name+"\n"+
-				"size of batch: "+size_of_batch+"\n"+
-				"num_of_threads: "+num_of_threads,
-				STDTypeEnum.STDOUT);
+		
+		constOut();
 	}
 	
 	/**
@@ -93,13 +101,7 @@ public class DynamicNetworkDatabase {
 		this.size_of_batch = size_of_batch;
 		this.num_of_threads = num_of_threads;
 		
-		Log.log("Created DynamicNetworkDatabase with:\n"+
-				"database url: "+db_url+"\n"+
-				"database port: "+db_port+"\n"+
-				"database name: "+db_name+"\n"+
-				"size of batch: "+size_of_batch+"\n"+
-				"num_of_threads: "+num_of_threads,
-				STDTypeEnum.STDOUT);
+		constOut();
 	}
 	
 	/**
@@ -111,8 +113,10 @@ public class DynamicNetworkDatabase {
 	 * @param num_of_threads
 	 * @throws DynamicNetworkDatabaseException
 	 */
-	public DynamicNetworkDatabase(String db_url, String db_port, String db_name, int size_of_batch, int num_of_threads)
+	public DynamicNetworkDatabase(String db_user, String db_password, String db_url, int db_port, String db_name, int size_of_batch, int num_of_threads)
 			throws DynamicNetworkDatabaseException {
+		this.db_user = db_user;
+		this.db_pass = db_password;
 		this.db_url = db_url;
 		this.db_port = db_port;
 		this.db_name = db_name;
@@ -126,12 +130,21 @@ public class DynamicNetworkDatabase {
 		this.size_of_batch = size_of_batch;
 		this.num_of_threads = num_of_threads;
 		
+		constOut();
+	}
+
+	/**
+	 * log message after constructor is done
+	 */
+	public void constOut() {
 		Log.log("Created DynamicNetworkDatabase with:\n"+
-				"database url: "+db_url+"\n"+
-				"database port: "+db_port+"\n"+
-				"database name: "+db_name+"\n"+
-				"size of batch: "+size_of_batch+"\n"+
-				"num_of_threads: "+num_of_threads,
+				"\tdatabase user:\t"+db_user+"\n"+
+				"\tdatabase pass:\t"+db_pass+"\n"+
+				"\tdatabase url:\t"+db_url+"\n"+
+				"\tdatabase port:\t"+db_port+"\n"+
+				"\tdatabase name:\t"+db_name+"\n"+
+				"\tsize of batch:\t"+size_of_batch+"\n"+
+				"\tnum_of_threads:\t"+num_of_threads,
 				STDTypeEnum.STDOUT);
 	}
 	
@@ -143,7 +156,11 @@ public class DynamicNetworkDatabase {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		Log.log("Starting test ...",STDTypeEnum.STDOUT);
 		
+		DynamicNetworkDatabase dndb = new  DynamicNetworkDatabase();
+		
+		Log.closeLog();
 	}
 	
 	/**
@@ -168,11 +185,11 @@ public class DynamicNetworkDatabase {
 		this.db_url = db_url;
 	}
 
-	public String get_db_port() {
+	public int get_db_port() {
 		return db_port;
 	}
 
-	public void set_db_port(String db_port) {
+	public void set_db_port(int db_port) {
 		this.db_port = db_port;
 	}
 
