@@ -1,8 +1,9 @@
 package data;
 
 import java.sql.*;
+
 import general.*;
-import general.Log.STDTypeEnum;;
+import general.Log.STDTypeEnum;
 
 /**
  * <p>
@@ -89,13 +90,13 @@ public class BasicDatabase {
 	 * 
 	 * @param size_of_batch
 	 * @param num_of_threads
-	 * @throws DynamicNetworkDatabaseException
+	 * @throws BasicDatabaseException
 	 */
-	public BasicDatabase(int size_of_batch, int num_of_threads) throws DynamicNetworkDatabaseException {
+	public BasicDatabase(int size_of_batch, int num_of_threads) throws BasicDatabaseException {
 		if (size_of_batch < 1 || num_of_threads < 1) {
 			String msg = "Size of batch and/or number of threads must be bigger than 0.";
 			Log.log(msg,STDTypeEnum.STDERR);
-			throw new DynamicNetworkDatabaseException("");
+			throw new BasicDatabaseException("");
 		}
 		
 		this.size_of_batch = size_of_batch;
@@ -111,10 +112,10 @@ public class BasicDatabase {
 	 * @param db_name
 	 * @param size_of_batch
 	 * @param num_of_threads
-	 * @throws DynamicNetworkDatabaseException
+	 * @throws BasicDatabaseException
 	 */
 	public BasicDatabase(String db_user, String db_password, String db_url, int db_port, String db_name, int size_of_batch, int num_of_threads)
-			throws DynamicNetworkDatabaseException {
+			throws BasicDatabaseException {
 		this.db_user = db_user;
 		this.db_pass = db_password;
 		this.db_url = db_url;
@@ -124,7 +125,7 @@ public class BasicDatabase {
 		if (size_of_batch < 1 || num_of_threads < 1) {
 			String msg = "Size of batch and/or number of threads must be bigger than 0.";
 			Log.log(msg,STDTypeEnum.STDERR);
-			throw new DynamicNetworkDatabaseException("");
+			throw new BasicDatabaseException("");
 		}
 		
 		this.size_of_batch = size_of_batch;
@@ -149,6 +150,71 @@ public class BasicDatabase {
 	}
 	
 	
+	/* *******
+	 * methods
+	 * *******/
+
+	/**
+	 * Get new connection to the database.
+	 * @return
+	 * 			Connection instance - a new connection to the database.
+	 */
+	public Connection getNewConnection() {
+		Log.log(">>> BasicDatabase.getNewConnection started", STDTypeEnum.STDOUT);
+		
+		String fullUrl = db_url+":"+db_port+"/"+db_name;
+		Connection conn = null;
+		
+		// establish connection
+		try {
+			Class.forName ("com.mysql.jdbc.Driver").newInstance ();
+			conn = DriverManager.getConnection(fullUrl,db_user,db_pass);
+			Log.log("Database connection to "+fullUrl+" established", STDTypeEnum.STDOUT);
+
+		} catch (SQLException e) {
+			Log.log("Could not establish database connection to "+fullUrl, STDTypeEnum.STDERR);
+			e.printStackTrace();
+			
+		} catch (Exception e) {
+			Log.log("Exception thrown for 'com.mysql.jdbc.Driver'", STDTypeEnum.STDERR);
+			e.printStackTrace();	
+		}
+		
+		Log.log(">>> BasicDatabase.getNewConnection ended", STDTypeEnum.STDOUT);
+		
+		return conn;
+	}
+
+	/**
+	 * Get row count for the given table using the given database connection.
+	 * @param conn
+	 * @param table
+	 * @return
+	 */
+	public int getCount(Connection conn, String table) {
+		Log.log(">>> BasicDatabase.getCount started", STDTypeEnum.STDOUT);
+		
+		Statement st;
+		try {
+			st = conn.createStatement();
+
+			st.executeQuery("SELECT COUNT(*) AS rowcount FROM `"+table+"`");
+			ResultSet res = st.getResultSet();
+			if (res.next()) {
+				Log.log(">>> BasicDatabase.getCount ended", STDTypeEnum.STDOUT);
+				return res.getInt("rowcount");
+			} else {
+				Log.log("ResultSet has no 'next'",STDTypeEnum.STDERR);
+				throw new SQLException();
+			}
+		} catch (SQLException e) {
+			Log.log("SQLException thrown from table "+table+" row count",STDTypeEnum.STDERR);
+			e.printStackTrace();
+			return -1;
+		}
+	}
+	
+	
 	/* ******************
 	 * Main - for testing
 	 * ******************/
@@ -167,8 +233,8 @@ public class BasicDatabase {
 	 * class for exceptions
 	 */
 	@SuppressWarnings("serial")
-	public class DynamicNetworkDatabaseException extends Exception {
-		public DynamicNetworkDatabaseException(String message){
+	public class BasicDatabaseException extends Exception {
+		public BasicDatabaseException(String message){
 			super(message);
 		}
 	}

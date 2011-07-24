@@ -1,0 +1,33 @@
+SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8 */;
+
+--
+-- Table structure for table `<WEIGHTS_VECTOR_TABLE_NAME>`
+--
+
+CREATE TABLE `<WEIGHTS_VECTOR_TABLE_NAME>` (
+  `transactor_id` int(10) unsigned NOT NULL,
+  `transactee_id` int(10) unsigned NOT NULL,
+  `weight` double NOT NULL,
+  PRIMARY KEY (`transactor_id`,`transactee_id`),
+  KEY `transactee_id` (`transactee_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `<WEIGHTS_VECTOR_TABLE_NAME>`
+--
+ALTER TABLE `<WEIGHTS_VECTOR_TABLE_NAME>`
+  ADD CONSTRAINT `<WEIGHTS_VECTOR_TABLE_NAME>_ibfk_2` FOREIGN KEY (`transactee_id`) REFERENCES `transactors` (`transactor_id`),
+  ADD CONSTRAINT `<WEIGHTS_VECTOR_TABLE_NAME>_ibfk_1` FOREIGN KEY (`transactor_id`) REFERENCES `transactors` (`transactor_id`);
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
