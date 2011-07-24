@@ -6,34 +6,7 @@ import general.*;
 import general.Log.STDTypeEnum;
 
 /**
- * <p>
- * <h1>Dynamic Network Representation in Database</h1><br>
- * Representation of a dynamic network on a MySQL database. The basic tables and fields are:
- * <b>Table <i>transactors</i>:</b><br>
- * <ul>
- * 	<li>
- * 		<i>transactor_id</i>: int(10) unsigned
- * 	</li>
- * 	<li>
- * 		<i>transactor_name</i>: varchar(120)
- * 	</li>
- * </ul>
- * <b>Table <i>transactions</i>:</b><br>
- * <ul>
- * 	<li>
- * 		<i>timestamp</i>: timestamp (format: "YYYY-MM-DD HH:mm:ss")
- * 	</li>
- * 	<li>
- * 		<i>transactor_id</i>: int(10) unsigned (foreign key: transactors->transactor_id)
- * 	</li>
- * 	<li>
- * 		<i>transactee_id</i>: int(10) unsigned (foreign key: transactors->transactor_id)
- * 	</li>
- * 	<li>
- * 		<i>weight</i>: double
- * 	</li>
- * </ul>
- * </p>
+ * 
  */
 public class BasicDatabase {
 
