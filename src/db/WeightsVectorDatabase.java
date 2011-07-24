@@ -18,6 +18,9 @@ import data.BasicDatabase.BasicDatabaseException;
 public class WeightsVectorDatabase {
 	
 	protected static final String genericTableName = "<WEIGHTS_VECTOR_TABLE_NAME>";
+	protected static final String genericTransactorNameFilter = "<TRANSACTOR_NAME_FILTER>";
+	protected static final String genericTransacteeNameFilter = "<TRANSACTEE_NAME_FILTER>";
+	
 	protected static String wvTableName;
 	protected static int size_of_batch;
 	protected static int num_of_threads;
@@ -31,6 +34,16 @@ public class WeightsVectorDatabase {
 			BasicDatabase db,					// database to use / modify
 			String wvTableName,					// new weights-vector table name, as will be set in the database
 			boolean dropIfExisting				// drop tables with the given name if exist 
+			) {
+		createWeightVectorTable(db, wvTableName, dropIfExisting, "", "");
+	}
+	
+	public static void createWeightVectorTable(
+			BasicDatabase db,					// database to use / modify
+			String wvTableName,					// new weights-vector table name, as will be set in the database
+			boolean dropIfExisting,				// drop tables with the given name if exist
+			String transactorNameFilter,		// regular expression for transactor name filtering
+			String transacteeNameFilter			// regular expression for transactee name filtering
 			) {
 		
 		Log.log(">>> WeightsVectorDatabase.createWeightVectorTable started - table name: "+wvTableName+", database: "+db.get_db_name(), STDTypeEnum.STDOUT);
@@ -80,7 +93,12 @@ public class WeightsVectorDatabase {
 			// ==========
 			
 			// get sql fill commands
-			List<String> mainTableFillCommands = getSqlCommand(wvTableName, resources_root+"weights_vector_db_fill_table.sql");
+			List<String> mainTableFillCommands = null;
+			if (transactorNameFilter.equals("") && transacteeNameFilter.equals("")) {
+				mainTableFillCommands = getSqlCommand(wvTableName, resources_root+"weights_vector_db_fill_table.sql");
+			} else {
+				mainTableFillCommands = getSqlCommand(wvTableName, resources_root+"weights_vector_db_fill_table_filtered.sql",transactorNameFilter,transacteeNameFilter);
+			}
 			
 			// run fill batch command
 			Log.log("Executing table fill command:", STDTypeEnum.STDOUT);
@@ -114,53 +132,80 @@ public class WeightsVectorDatabase {
 	}
 	
 	// helpers
-		// -------
-		
-		/**
-		 * Get a list of commands extracted from given resource (path the SQL script) and use it with the given table name.
-		 * The given table name is replacing the generic '<WEIGHTS_VECTOR_TABLE_NAME>' name in the resource.
-		 * @param wvTableName
-		 * @param resource
-		 * @return
-		 * @throws FileNotFoundException
-		 * @throws IOException
-		 */
-		protected static List<String> getSqlCommand(String wvTableName, String resource) throws FileNotFoundException, IOException {
-			List<String> res = new ArrayList<String>();
-			
-			// iterate over the file and replace generic name with given table name
-			BufferedReader br = General.getBufferedReader(resource);
-			String line;
-			String elem = "";
-			while ((line = br.readLine()) != null) {
-				if (line == "" || line.startsWith("--")) {
-					// empty line / comment - skip
-					continue;
-				} else if (line.endsWith(";")) {
-					// end of sql query - newline
-					elem += line.replace(genericTableName,wvTableName).replace(";","");
-					res.add(elem);
-					elem = "";
-				} else {
-					// continue aggregate sql query in the same line
-					elem += line.replace(genericTableName, wvTableName);
-				}
+	// -------
+
+	/**
+	 * Get a list of commands extracted from given resource (path the SQL script) and use it with the given table name.
+	 * The given table name is replacing the generic '<WEIGHTS_VECTOR_TABLE_NAME>' name in the resource.
+	 * @param wvTableName
+	 * @param resource
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	protected static List<String> getSqlCommand(String wvTableName, String resource) throws FileNotFoundException, IOException {
+		List<String> res = new ArrayList<String>();
+
+		// iterate over the file and replace generic name with given table name
+		BufferedReader br = General.getBufferedReader(resource);
+		String line;
+		String elem = "";
+		while ((line = br.readLine()) != null) {
+			if (line == "" || line.startsWith("--")) {
+				// empty line / comment - skip
+				continue;
+			} else if (line.endsWith(";")) {
+				// end of sql query - newline
+				elem += line.replace(genericTableName,wvTableName).replace(";","");
+				res.add(elem);
+				elem = "";
+			} else {
+				// continue aggregate sql query in the same line
+				elem += line.replace(genericTableName, wvTableName);
 			}
-			br.close();
-			return res;
 		}
-		
-		/**
-		 * Initialize resources root path, including ending delimiter.
-		 */
-		protected static void initResourcesRoot() {
-			String root = System.getProperty("user.dir");
-			String del = System.getProperty("file.separator");
-			root.replace(del, del+del);
-			resources_root = root+del+del+"src"+del+del+"resources"+del+del;
-		}
-		
+		br.close();
+		return res;
+	}
 	
+	protected static List<String> getSqlCommand(String wvTableName, String resource, String transactorNameFilter, String transacteeNameFilter) throws FileNotFoundException, IOException {
+		List<String> res = new ArrayList<String>();
+
+		// iterate over the file and replace generic name with given table name
+		BufferedReader br = General.getBufferedReader(resource);
+		String line;
+		String elem = "";
+		while ((line = br.readLine()) != null) {
+			if (line == "" || line.startsWith("--")) {
+				// empty line / comment - skip
+				continue;
+			} else if (line.endsWith(";")) {
+				// end of sql query - newline
+				elem += line.replace(genericTableName,wvTableName).replace(genericTransactorNameFilter, transactorNameFilter).
+						replace(genericTransacteeNameFilter, transacteeNameFilter).replace(";","");
+				res.add(elem);
+				elem = "";
+			} else {
+				// continue aggregate sql query in the same line
+				elem += line.replace(genericTableName, wvTableName).replace(genericTransactorNameFilter, transactorNameFilter).
+						replace(genericTransacteeNameFilter, transacteeNameFilter);
+			}
+		}
+		br.close();
+		return res;
+	}
+
+	/**
+	 * Initialize resources root path, including ending delimiter.
+	 */
+	protected static void initResourcesRoot() {
+		String root = System.getProperty("user.dir");
+		String del = System.getProperty("file.separator");
+		root.replace(del, del+del);
+		resources_root = root+del+del+"src"+del+del+"resources"+del+del;
+	}
+
+
 	/*
 	public static void createWeightVectorTable(
 			BasicDatabase db,					// database to use / modify
