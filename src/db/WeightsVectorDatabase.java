@@ -4,6 +4,7 @@ import java.io.*;
 import java.lang.Thread.State;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import general.Log;
 import general.Log.STDTypeEnum;
@@ -63,6 +64,7 @@ public class WeightsVectorDatabase {
 			Log.log("Executing table creation batch commands", STDTypeEnum.STDOUT);
 			int[] createCount = st.executeBatch();
 			st.clearBatch();
+			st.close();
 			
 			// fill table
 			// ==========
@@ -157,6 +159,9 @@ public class WeightsVectorDatabase {
 		return res;
 	}
 	
+	/**
+	 * Thread class for concurrent weights vector table update
+	 */
 	protected static class FillTableThread extends Thread {
 		// id and start / end lines
 		protected int id;
@@ -164,6 +169,10 @@ public class WeightsVectorDatabase {
 		protected int end_line;
 		protected Connection conn;
 		
+		// shared counter for updated values
+		protected static AtomicInteger updateCount = new AtomicInteger(0);
+		
+		// constructor
 		protected FillTableThread(int id, int start_line, int end_line, Connection conn) {
 			this.id = id;
 			this.start_line = start_line;
@@ -174,7 +183,8 @@ public class WeightsVectorDatabase {
 		public void run() {
 			Log.log(">>> WeightsVectorDatabase.FillTableThread.run started - thread "+id+", lines "+start_line+"-"+end_line, STDTypeEnum.STDOUT);
 			
-			//TODO read and fill
+			// read and fill
+			readAndFill(id,start_line,end_line,conn);
 			
 			Log.log(">>> WeightsVectorDatabase.FillTableThread.run ended - thread "+id+", lines "+start_line+"-"+end_line, STDTypeEnum.STDOUT);
 		}
@@ -189,6 +199,7 @@ public class WeightsVectorDatabase {
 		Statement st = null;
 		ResultSet res = null;
 		int i;
+		Map<String,Double> map = new HashMap<String,Double>();
 		
 		int num_of_lines = end_line - start_line + 1;
 		int num_of_batches = num_of_lines % size_of_batch == 0 ? num_of_lines/size_of_batch : num_of_lines/size_of_batch + 1;
@@ -199,36 +210,48 @@ public class WeightsVectorDatabase {
 			// initialize statement
 			st = conn.createStatement();
 			
-			// iterate over all batches but last
+			// iterate over all batches
 			for (i=0; i<num_of_batches - 1; i++) {
 				// get batch
 				res = st.executeQuery("SELECT `transactor_id`,`transactee_id`,`weight` FROM `transactions` LIMIT "+
 						(start_line + i*size_of_batch)+
 						","+
-						(start_line + (i+1)*size_of_batch - 1)
+						((i == num_of_batches - 1) ? (start_line + size_of_last_batch) : (start_line + (i+1)*size_of_batch - 1))
 						);
 				
 				// process batch
-				
+				while (res.next()) {
+					String key = res.getString("transactor_id")+"_"+res.getString("transactee_id");
+					double weight = res.getDouble("weight");
+					
+					if (map.containsKey(key)) {
+						map.put(key,(map.get(key)+weight));
+					} else {
+						map.put(key, weight);
+					}
+				}
 				
 				// update database
+				for (String key: map.keySet()) {
+					String[] ids = key.split("_");
+					String val = map.get(key).toString();
+					
+					st.addBatch("INSERT INTO `"+wvTableName+"`(`transactor_id`,`transactee_id`,`weight`) VALUES ("+ids[0]+","+ids[1]+","+val+") "+
+							"ON DUPLICATE KEY UPDATE `weight`=`weight`+"+val);
+				}
 				
+				int[] updateCount = st.executeBatch();
+				st.clearBatch();
+				int totalUpdated = 0;
+				
+				for (int tmp: updateCount) {
+					totalUpdated = FillTableThread.updateCount.addAndGet(tmp);
+				}
+				Log.log("Thread "+((FillTableThread)Thread.currentThread()).id+" updated batch. Total updated: "+totalUpdated,STDTypeEnum.STDOUT);
 				
 			}
-
-			// last batch
-			// get batch
-			res = st.executeQuery("SELECT `transactor_id`,`transactee_id`,`weight` FROM `transactions` LIMIT "+
-					(start_line + i*size_of_batch)+
-					","+
-					(start_line + size_of_last_batch)
-					);
 			
-			// process batch
-			
-			
-			// update database
-			
+			st.close();
 
 		} catch (SQLException e) {
 			Log.log("SQLException thrown from readAndFill",STDTypeEnum.STDERR);
